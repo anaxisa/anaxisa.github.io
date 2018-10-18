@@ -1,5 +1,3 @@
-# Anayancy Ramos
-Independent Study/Senior Research Project Fall 2018
+# Description
 
-
-A citation analysis tool that will apply graph theory measures to quantify "important" articles within the Cancer Publication Portal tool.
+A citation analysis tool is proposed that will apply graph theory measures to quantify "important" articles within the Cancer Publication Portal (CPP) tool.
