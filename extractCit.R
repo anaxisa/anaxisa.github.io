@@ -4,6 +4,13 @@ library(readr)
 library(dplyr)
 library(xml2)
 
+# specify directory for tar files
+tarDir <- "C:/Users/airam/OneDrive/Documents/School/Fall 2018/Independent Study/tar/"
+# specify directory for extracted files
+dir <- "C:/Users/airam/OneDrive/Documents/School/Fall 2018/Independent Study/PMC/"
+# specify directory for results (citation information)
+resultsDir <- "C:/Users/airam/OneDrive/Documents/School/Fall 2018/Independent Study/txt/"
+
 # Download .txt file of Open Access Subset -- in other file!
 
 # Create table containing downloaded files from Open Access Subset
@@ -21,13 +28,7 @@ pmids <- read.delim("~/School/Fall 2018/Independent Study/brca2.txt", header = F
 matches <- filter(testfile, index.pmids %in% pmids$V1)
 results <- matches$X1
 
-# specify directory for tar files
-tarDir <- "C:/Users/airam/OneDrive/Documents/School/Fall 2018/Independent Study/tar/"
-
 # Download XML data of results -- in other file!
-
-# specify directory for extracted files
-dir <- "C:/Users/airam/OneDrive/Documents/School/Fall 2018/Independent Study/PMC/"
 
 # Extract XML citation information of matched files
 pmcFiles <- substring(results, regexpr("PMC", results), regexpr("..gz", results))
@@ -60,7 +61,6 @@ extractXML <- function(x) {
       findUpd <- unlist(paste(find2, collapse = ", "))
       
       # Outputs citation PMIDs to txt file, named as the PMID of the original article 
-      resultsDir <- "C:/Users/airam/OneDrive/Documents/School/Fall 2018/Independent Study/txt/"
       write(findUpd, file = paste0(resultsDir, pmidArt))
     }
   }
