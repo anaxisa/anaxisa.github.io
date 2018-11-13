@@ -52,3 +52,27 @@ A citation analysis tool is proposed that will expand the capabilities of the Ca
 
     # write dataframe to excel spreadsheet file
     write_excel_csv(edges, "C:/Users/airam/OneDrive/Documents/School/Fall 2018/Independent Study/edgeList1000.csv")
+    
+## **Filtering in pmc2nc**
+    # script for addition of option to limit requests based on availability within PMC
+    library(dplyr)
+
+    # Downloads .csv.gz file containing the titles/PMIDs of articles fully available in PMC
+    download.file("ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/PMC-ids.csv.gz", destfile = "~/OneDrive/Documents/School/Fall 2018/Independent Study/limitDB.csv.gz")
+    limitDB_csv <- read_csv("~/OneDrive/Documents/School/Fall 2018/Independent Study/limitDB.csv.gz")
+
+    # Extracts PMIDs of articles available in PMC
+    index.pmids <- gsub("PMID:", "", limitDB_csv$PMID)
+
+    # testing filtering on 3 articles:
+    test <- c("10655514", "9990096", "10655515")
+
+    limit_to_pmc <-
+      function(pmids) {
+        # Find matches of given PMIDs
+        matches <- filter(limitDB_csv, index.pmids %in% pmids)
+        results <- matches$PMID
+        return(results)
+      }
+
+    limit_to_pmc(test)
