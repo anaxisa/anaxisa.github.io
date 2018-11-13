@@ -53,8 +53,8 @@ A citation analysis tool is proposed that will expand the capabilities of the Ca
     # write dataframe to excel spreadsheet file
     write_excel_csv(edges, "C:/Users/airam/OneDrive/Documents/School/Fall 2018/Independent Study/edgeList1000.csv")
 
-## Edge List of 1000 BRCA2 articles cited more that 150 times
-(anaxisa.github.io/edgeList1000(150).csv)
+## Edge List of 1000 BRCA2 articles cited more than 150 times
+[download edge list](anaxisa.github.io/edgeList1000(150).csv)
       
 ## **Filtering in pmc2nc**
     # script for addition of option to limit requests based on availability within PMC
