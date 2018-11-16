@@ -1,7 +1,6 @@
 # Updated script for extracting citation information - articles that cite a given article
 library(httr) 
 library(xlsx)
-library(visNetwork)
 
 # get base URL for web scraping PMID citation information in XML format for one article
 baseURL <- "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=pubmed&linkname=pubmed_pubmed_citedin"
@@ -46,23 +45,9 @@ for(pmid in pmids) {
 nodes <- data.frame(id=unique(c(d$pmid, d$citing)))
 edges <- data.frame(from = d[,2], to = d[,1])
 
-vis.nodes <- nodes
-vis.edges <- edges
-
-vis.nodes$shape <- "dot"
-vis.nodes$shadow <- TRUE
-vis.nodes$title <- vis.nodes$id 
-vis.nodes$borderWidth <- 2
-vis.nodes$color.border <- "black"
-vis.nodes$color.hightlight.background <- "orange"
-vis.nodes$color.highlight.border <- "darkred"
-visNetwork(vis.nodes, vis.edges)
-
 # write dataframe to excel spreadsheet file
 write_excel_csv(edges, "C:/Users/airam/OneDrive/Documents/School/Fall 2018/Independent Study/edgeList1000.csv")
 
-# create simple network - (!) use a different network function for more complex graphs
-simpleNetwork(d)
 
 
 
