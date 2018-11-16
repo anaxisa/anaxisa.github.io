@@ -3,79 +3,100 @@
 A citation analysis tool is proposed that will expand the capabilities of the Cancer Publication Portal (CPP), which will return centrality measures for published papers, return a visualization of the citation networks themselves, and identify network measures characterizing well-studied genes.
 
 ## **Get citations**
-    # Updated script for extracting citation information - articles that cite a given article </br>
-    library(httr) 
-    library(xlsx)
+    #' Finds "cited in" articles from PMC.
+    #'
+    #' `get_pmc_cited_in` takes a vector of article PMIDs and returns elink results containing
+    #' the PMIDs of articles that cite each of the given articles.
+    #'
+    #' Finds articles that cite the provided set of articles. This
+    #' function is a wrapper for the `entrez_link` function from
+    #' `rentrez`. If more than 1 PMID is specified, requests are made in batches, ensuring that
+    #' no more than 200 pmids are queried at a time, and that no
+    #' more than 3 requests are made per second. If an Entrez Key
+    #' is set, this function allows for 10 requests per second.
+    #' Entrez keys can be set using `set_entrez_key(key)`.
+    #' 
+    #' @param pmids a vector of PMIDs look-up 
+    #' @param batchSize the batch size to use
+    #' @param limitPMIDs limit search to articles within PMC
+    #' @return For looking up one PMID or one batch, an elink object; for multiple batches, a list of 
+    #'         of elink list objects are returned, i.e., the \eqn{i^{th}} element of the list is an elink list 
+    #'         object for the \eqn{i^{th}} batch.
+    #'
+    #' @examples
+    #' res <- get_pmc_cited_in(c(21876726,21876761))
 
-    # get base URL for web scraping PMID citation information in XML format for one article
-    baseURL <- "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=pubmed&linkname=pubmed_pubmed_citedin"
+    #' @export
+    get_pmc_cited_in <-
+    function(pmids, batchSize = 200, limitPMIDs) {
+  
+      if (batchSize <= 0 || batchSize > 200) {
+        stop("Batch size must be betwen 1 and 200")
+      } 
+  
+      n <- length(pmids)
 
-    # get brca2 PMIDs to add onto baseURL
-    pmids <- unlist(read.delim("~/School/Fall 2018/Independent Study/brca2.txt", header = FALSE, sep = "\n"))
-    # working with only 95 articles for now
-    pmids <- pmids[1:95]
-
-    # add personal email to baseURL
-    email <- "ramosanay@my.easternct.edu"
-    url_email <- paste0("&email=", email)
-
-    # create empty dataframe to populate through loop
-    d = NULL
-
-    for(pmid in pmids) {
-      # add pmid and email information onto base URL
-      url_ids <- paste0("&id=", pmid, collapse = "")
-      url <- paste0(baseURL, url_ids, url_email)
-  
-      # retrieve information from constructed url above
-      res <- GET(url)
-  
-      # retrieve contents of URL in text format
-      text <- content(res, as = "text")
-  
-      # get all information within the 'pubmed_pubmed_citedin' tag
-      getPMIDS1 <- substring(text, regexpr("<LinkName>pubmed_pubmed_citedin</LinkName>", text), regexpr("</LinkSetDb>\n", text))
-  
-      # get only PMID citation information (all numerical)
-      getPMIDS2 <- regmatches(getPMIDS1, gregexpr('[0-9]+', getPMIDS1))[[1]]
-  
-  
-      if(length(getPMIDS2) > 150) {
-        d <- rbind(d, data.frame(pmid=as.numeric(pmid), citing=as.numeric(getPMIDS2)))
+      # update pmid vector if limit is set to TRUE
+      if(limitPMIDs == TRUE) {
+        pmids <- intersect(pmids, pmc_pmids[[1]])
+    
+        if(length(pmids) == 0) {
+          stop("PMIDs in search not available in PMC")
+        }
       }
+    
+      # if 1 batch, return the results
+      if (n <= batchSize) {
+        by_id = TRUE
+        if (n == 1) {
+            by_id <- FALSE
+        }
+        res <- entrez_link(dbfrom = "pubmed",  id = pmids, linkname = "pubmed_pubmed_citedin", by_id = by_id)
+    
+        if (n == 1) {
+          res <- list(res)
+        }
   
-      Sys.sleep(1)
+        names(res) <- pmids
+    
+        return(res)
+      } 
+
+      # otherwise, process in batches
+      wait <- 0.34 # no more than 3 requests per second
+      if (Sys.getenv("ENTREZ_KEY") != "") {
+        wait <- 0.11 # no more than 10 requests per second
+      }
+      num_batches <- ceiling(n/batchSize)
+      res <- vector("list", num_batches)
+  
+      beg <- 1
+      end <- min(batchSize, n)
+  
+      pb <- progress_bar$new(total = num_batches)
+  
+      for (i in 1:num_batches) {
+        currIDs <- pmids[beg:end]
+        pb$tick()
+
+        by_id <- TRUE
+        if (length(currIDs) == 1) {
+            by_id <- FALSE
+        }
+
+        res[[i]] <- entrez_link(dbfrom = "pubmed",  id = currIDs, linkname = "pubmed_pubmed_citedin", by_id = by_id)
+    
+        if (!by_id) {
+            res[[i]] <- list(res[[i]])
+        }
+        names(res[[i]]) <- currIDs
+        beg = end +1
+        end = min(end + batchSize, n)
+    
+        Sys.sleep(wait)
+      }
+      res
     }
-
-    nodes <- data.frame(id=unique(c(d$pmid, d$citing)))
-    edges <- data.frame(from = d[,2], to = d[,1])
-
-    # write dataframe to excel spreadsheet file
-    write_excel_csv(edges, "C:/Users/airam/OneDrive/Documents/School/Fall 2018/Independent Study/edgeList1000.csv")
 
 ## Edge List of 1000 BRCA2 articles cited more than 150 times
 [download edge list](anaxisa.github.io/edgeList1000(150).csv)
-      
-## **Filtering in pmc2nc**
-    # script for addition of option to limit requests based on availability within PMC
-    library(dplyr)
-
-    # Downloads .csv.gz file containing the titles/PMIDs of articles fully available in PMC
-    download.file("ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/PMC-ids.csv.gz", destfile = "~/OneDrive/Documents/School/Fall 2018/Independent Study/limitDB.csv.gz")
-    limitDB_csv <- read_csv("~/OneDrive/Documents/School/Fall 2018/Independent Study/limitDB.csv.gz")
-
-    # Extracts PMIDs of articles available in PMC
-    index.pmids <- gsub("PMID:", "", limitDB_csv$PMID)
-
-    # testing filtering on 3 articles:
-    test <- c("10655514", "9990096", "10655515")
-
-    limit_to_pmc <-
-      function(pmids) {
-        # Find matches of given PMIDs
-        matches <- filter(limitDB_csv, index.pmids %in% pmids)
-        results <- matches$PMID
-        return(results)
-      }
-
-    limit_to_pmc(test)
