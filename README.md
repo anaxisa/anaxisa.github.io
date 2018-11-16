@@ -98,5 +98,5 @@ A citation analysis tool is proposed that will expand the capabilities of the Ca
       res
     }
 
-## Edge List of 1000 BRCA2 articles cited more than 150 times
-[download edge list](anaxisa.github.io/edgeList1000(150).csv)
+## Edge List provided by Dr. Dancik
+[download edge list](anaxisa.github.io/BRCA2_full_edge_list.xlsx.csv)
