@@ -98,9 +98,9 @@ A citation analysis tool is proposed that will expand the capabilities of the Ca
       res
     }
 
-## Graph Theory Measures
-[download TNF results](https://github.com/anaxisa/anaxisa.github.io/blob/master/TNFRES.csv)
-[download TP53 results](https://github.com/anaxisa/anaxisa.github.io/blob/master/TP53RES.csv)
-[download BRCA1 results](https://github.com/anaxisa/anaxisa.github.io/blob/master/brca1RES.csv)
+## Results
+[download TNF results](https://github.com/anaxisa/anaxisa.github.io/blob/master/TNFRES.csv) </br>
+[download TP53 results](https://github.com/anaxisa/anaxisa.github.io/blob/master/TP53RES.csv) </br>
+[download BRCA1 results](https://github.com/anaxisa/anaxisa.github.io/blob/master/brca1RES.csv) </br>
 [download BRCA2 results](https://github.com/anaxisa/anaxisa.github.io/blob/master/brca2RES.csv)
 
