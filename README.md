@@ -1,40 +1,61 @@
 # Description
 
-A citation analysis tool is proposed that will expand the capabilities of the Cancer Publication Portal (CPP), which will return centrality measures for published papers, return a visualization of the citation networks themselves, and identify network measures characterizing well-studied genes.
+A citation collection tool is proposed that will expand the capabilities of the Cancer Publication Portal (CPP), which will return an edge list of PMIDs uploaded by the user. The edge list can then be uploaded to a graphing software, such as Gephi, in order to visualize citation networks.
 
 ## Shiny App
 ```R
 library(shiny)
 library(pmc2nc)
 
+ARTICLE_INFO <- TRUE
+
 setwd("C:/Users/airam/OneDrive/Documents/School/Fall 2018/Independent Study")
+
+articleInfoButtons <- NULL
+articleResults <- NULL
+
+if (ARTICLE_INFO) {
+  articleInfoButtons <- radioButtons(
+    "choices",
+    "Include authors, title, publication date, and journal name of input articles in edge list?:",
+    choices = c(
+      "Yes" = "yes",
+      "No" = "no"
+    ),
+    # defaults additional information button to no
+    selected = "no"
+  )
+
+
+  articleResults <- column(
+    4,
+    h4("Article information preview:"),
+     tableOutput("articleInfo")
+  )
+
+}
 
 # Define UI
 ui <- fluidPage(# Create title for app
-  titlePanel("Citation Analysis Tool"),
+  titlePanel("Citaton Analysis Tool"),
   
   sidebarLayout(
     # Panel for user input
     sidebarPanel(
-      # Input: Entrez key (if applicable)
-      textInput("entrezK", "Input NCBI API key:"),
-      helpText(
-        "Note: The NCBI API key is not required, but will make searching faster.",
-        "For more information, please visit",
-        tags$a(href = "https://www.ncbi.nlm.nih.gov/books/NBK25497/", "NCBI.")
-      ),
+      h4(strong("Step 1: Enter PMIDs using method (A) or (B)"), style = "color:slategrey"),
       
       # Input: PMID text list
-      textInput("txt", "Input list of PMIDs:"),
+      textAreaInput("txt", "(A) Paste/input list of PMIDs:", height = "150px"),
       helpText(
-        "Note: Please ensure that PMIDs are comma-seperated, followed by a space.",
-        "Example: 123, 124"
+        "Note: PMIDs can be input as a comma-seperated list OR one PMID can be listed per line."
       ),
+      
+      h4(strong("-OR-"), align = "center", style = "color:red"),
       
       # Input: CSV file - FIX server code
       fileInput(
         "file1",
-        "Choose CSV file:",
+        "(B) Upload CSV file:",
         multiple = FALSE,
         accept = c("text/csv",
                    "text/plain")
@@ -43,42 +64,57 @@ ui <- fluidPage(# Create title for app
       # Horizontal line
       tags$hr(),
       
+      # Get additional information buttons
+      articleInfoButtons,
+      
+      # Horizontal line
+      tags$hr(),
+      
+      # Input: Entrez key (if applicable)
+      h4(strong("Step 2: (Optional)"), style = "color:slategrey"),
+      textInput("entrezK", "Input NCBI API key:"),
+      helpText(
+        "Note: The NCBI API key is not required, but will make searching faster.",
+        "For more information, please visit",
+        tags$a(href = "https://www.ncbi.nlm.nih.gov/books/NBK25497/", "NCBI.")
+      ),
+      
+      tags$hr(),
+      
       # Input: Action button to submit
+      h4(strong("Step 4: Submit!"), style = "color:slategrey"),
       actionButton("action", "Submit")
     ),
     
     # Main panel for downloading results
     mainPanel(
-      tableOutput("resultsum"),
-      
-      # Horizontal line
-      tags$hr(),
-      
-      h4("Edge list preview:"),
-      tableOutput("esum"),
-      
-      # Horizontal line
-      tags$hr(),
-      
-      h4("Summary of most cited articles:"),
-      tableOutput("topCitations"),
-      
-      # Horizontal line
-      tags$hr(),
-      
-      downloadButton("downloadData", "Download full results")
+      column(
+        4,
+        tableOutput("resultsum"),
+        tags$hr(),
+        h4("Summary of most cited articles:"),
+        tableOutput("topCitations")
+      ),
+      column(
+        4,
+        h4("Edge list preview:"),
+        tableOutput("esum"),
+        downloadButton("downloadData", "Download full results")
+      ), 
+      articleResults
     )
   ))
 
 # Define server logic
 server <- function(input, output) {
   # Code below only runs when 'submit' button is selected
+  
   observeEvent(input$action, {
-    
     # if there is no csv file upload, run text analysis
     if (is.null(input$file1)) {
       # reads in text input
       txtFile <- readLines(textConnection(input$txt))
+      
       
       # seperates text input by commas
       txtFile <- trimws(unlist(strsplit(txtFile, ",")))
@@ -98,13 +134,29 @@ server <- function(input, output) {
       analyzeIDs <- unique(uploadFile[[1]])
     }
     
+    
+    set_entrez_key(as.character(input$entrezK))
+    
+    
     # pass text input or csv input values to pmc2nc
-    set_entrez_key(input$entrezK)
     pmids <- get_pmc_cited_in(analyzeIDs)
     EL <- generateEdgeList(pmids)
     
+    
+    
+    artInfo <- NULL
     ########################################################
-    # Output - first 6 PMIDs of Edge List shown (for testing)
+    # get additional information if requested
+    if(input$choices == "yes") {
+          artInfo <- get_article_info(analyzeIDs)
+    }
+    output$articleInfo <- renderTable({
+      head(artInfo)
+    })
+    
+    
+    ########################################################
+    # Output - first 6 PMIDs of Edge List shown
     output$esum <- renderTable({
       head(EL)
     })
@@ -120,7 +172,8 @@ server <- function(input, output) {
         "Summary" = c(
           "Number of articles in user list:",
           "Number cited by articles in PMC:",
-          "Number not cited or not in PMC:"),
+          "Number not cited or not in PMC:"
+        ),
         "Count" = c(res1, res2, res3)
       )
     
@@ -131,8 +184,10 @@ server <- function(input, output) {
     # get results for citation count -
     # convert edge list to data frame in order to construct table
     resl <- as.data.frame(getCitationCounts(EL))
+    colnames(resl) <- c("PMIDs", "Count")
     
-    output$topCitations <- renderTable(head(resl[order(resl$n, decreasing = TRUE),]))
+    output$topCitations <-
+      renderTable(head(resl[order(resl$Count, decreasing = TRUE), ]))
     
     ########################################################
     # allows user to download edge list
@@ -147,14 +202,18 @@ server <- function(input, output) {
     )
   })
 }
+
+
+# Run the app
+shinyApp(ui = ui, server = server)
 ```
 
 # Run the app
 shinyApp(ui = ui, server = server)
 
 ## Results
-[download TNF results](https://github.com/anaxisa/anaxisa.github.io/blob/master/TNFRES.csv) </br>
-[download TP53 results](https://github.com/anaxisa/anaxisa.github.io/blob/master/TP53RES.csv) </br>
-[download BRCA1 results](https://github.com/anaxisa/anaxisa.github.io/blob/master/brca1RES.csv) </br>
-[download BRCA2 results](https://github.com/anaxisa/anaxisa.github.io/blob/master/brca2RES.csv)
+[download TNF edge list results](https://github.com/anaxisa/anaxisa.github.io/blob/master/Edge%20Lists/TNFel2.csv) </br>
+[download TP53 edge list results](https://github.com/anaxisa/anaxisa.github.io/blob/master/Edge%20Lists/tp53el.csv) </br>
+[download BRCA1 edge list results](https://github.com/anaxisa/anaxisa.github.io/blob/master/Edge%20Lists/brca1el.csv) </br>
+[download BRCA2 edge list results](https://github.com/anaxisa/anaxisa.github.io/blob/master/Edge%20Lists/BRCA2_full_edge_list.xlsx)
 
