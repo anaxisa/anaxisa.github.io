@@ -1,11 +1,34 @@
 library(shiny)
 library(pmc2nc)
 
-setwd("C:/Users/airam/OneDrive/Documents/School/Fall 2018/Independent Study")
+ARTICLE_INFO <- TRUE
+
+articleInfoButtons <- NULL
+articleResults <- NULL
+
+if (ARTICLE_INFO) {
+  articleInfoButtons <- radioButtons(
+    "choices",
+    "Include authors, title, publication date, and journal name of input articles in edge list?:",
+    choices = c(
+      "Yes" = "yes",
+      "No" = "no"
+    ),
+    # defaults additional information button to no
+    selected = "no"
+  )
+  
+  articleResults <- column(
+    4,
+    h4("Article information preview:"),
+    tableOutput("articleInfo")
+  )
+  
+}
 
 # Define UI
 ui <- fluidPage(# Create title for app
-  titlePanel("Citation Analysis Tool"),
+  titlePanel("Citaton Collection Tool"),
   
   sidebarLayout(
     # Panel for user input
@@ -32,24 +55,9 @@ ui <- fluidPage(# Create title for app
       # Horizontal line
       tags$hr(),
       
-      # Input: checkbox for additional return of results
-      h4(strong("Step 2: Additional information"), style = "color:slategrey"),
-      checkboxGroupInput(
-        "SorT",
-        "Return information from Source or Target?:",
-        c("Source" = "source",
-          "Target" = "target")
-      ),
-      checkboxGroupInput(
-        "choices",
-        "Include following in edge list:",
-        c(
-          "Authors" = "authors",
-          "Title" = "title",
-          "Publication Date" = "pubdate",
-          "Journal Name" = "jname"
-        )
-      ),
+      # Get additional information buttons
+      h4(strong("Step 2: (Optional) Include additional information?"), style = "color:slategrey"),
+      articleInfoButtons,
       
       # Horizontal line
       tags$hr(),
@@ -84,7 +92,8 @@ ui <- fluidPage(# Create title for app
         h4("Edge list preview:"),
         tableOutput("esum"),
         downloadButton("downloadData", "Download full results")
-      )
+      ), 
+      articleResults
     )
   ))
 
@@ -118,13 +127,23 @@ server <- function(input, output) {
     }
     
     
-    set_entrez_key(input$entrezK)
+    set_entrez_key(as.character(input$entrezK))
     
-    print(paste(input$choices, collapse = ", "))
     
     # pass text input or csv input values to pmc2nc
-    pmids <- get_pmc_cited_in(analyzeIDs, filter = "title")
-    EL <- generateEdgeList(pmids$res[[1]])
+    pmids <- get_pmc_cited_in(analyzeIDs)
+    EL <- generateEdgeList(pmids)
+    
+    ########################################################
+    artInfo <- NULL
+    
+    # get additional information if requested
+    if(input$choices == "yes") {
+      artInfo <- get_article_info(analyzeIDs)
+    }
+    output$articleInfo <- renderTable({
+      head(artInfo)
+    })
     
     ########################################################
     # Output - first 6 PMIDs of Edge List shown
@@ -143,7 +162,7 @@ server <- function(input, output) {
         "Summary" = c(
           "Number of articles in user list:",
           "Number cited by articles in PMC:",
-          "Number not cited or not in PMC:"
+          "Number not cited or cited by articles not in PMC:"
         ),
         "Count" = c(res1, res2, res3)
       )
@@ -162,7 +181,6 @@ server <- function(input, output) {
     
     ########################################################
     # allows user to download edge list
-    # (!) FIX: file name function
     output$downloadData <- downloadHandler(
       filename = function() {
         paste0("data-", Sys.Date(), ".csv")
