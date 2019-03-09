@@ -9,8 +9,6 @@ library(pmc2nc)
 
 ARTICLE_INFO <- TRUE
 
-setwd("C:/Users/airam/OneDrive/Documents/School/Fall 2018/Independent Study")
-
 articleInfoButtons <- NULL
 articleResults <- NULL
 
@@ -25,19 +23,18 @@ if (ARTICLE_INFO) {
     # defaults additional information button to no
     selected = "no"
   )
-
-
+  
   articleResults <- column(
     4,
     h4("Article information preview:"),
-     tableOutput("articleInfo")
+    tableOutput("articleInfo")
   )
-
+  
 }
 
 # Define UI
 ui <- fluidPage(# Create title for app
-  titlePanel("Citaton Analysis Tool"),
+  titlePanel("Citaton Collection Tool"),
   
   sidebarLayout(
     # Panel for user input
@@ -65,13 +62,14 @@ ui <- fluidPage(# Create title for app
       tags$hr(),
       
       # Get additional information buttons
+      h4(strong("Step 2: (Optional) Include additional information?"), style = "color:slategrey"),
       articleInfoButtons,
       
       # Horizontal line
       tags$hr(),
       
       # Input: Entrez key (if applicable)
-      h4(strong("Step 2: (Optional)"), style = "color:slategrey"),
+      h4(strong("Step 3: (Optional)"), style = "color:slategrey"),
       textInput("entrezK", "Input NCBI API key:"),
       helpText(
         "Note: The NCBI API key is not required, but will make searching faster.",
@@ -142,18 +140,16 @@ server <- function(input, output) {
     pmids <- get_pmc_cited_in(analyzeIDs)
     EL <- generateEdgeList(pmids)
     
-    
-    
-    artInfo <- NULL
     ########################################################
+    artInfo <- NULL
+    
     # get additional information if requested
     if(input$choices == "yes") {
-          artInfo <- get_article_info(analyzeIDs)
+      artInfo <- get_article_info(analyzeIDs)
     }
     output$articleInfo <- renderTable({
       head(artInfo)
     })
-    
     
     ########################################################
     # Output - first 6 PMIDs of Edge List shown
@@ -172,7 +168,7 @@ server <- function(input, output) {
         "Summary" = c(
           "Number of articles in user list:",
           "Number cited by articles in PMC:",
-          "Number not cited or not in PMC:"
+          "Number not cited or cited by articles not in PMC:"
         ),
         "Count" = c(res1, res2, res3)
       )
@@ -191,7 +187,6 @@ server <- function(input, output) {
     
     ########################################################
     # allows user to download edge list
-    # (!) FIX: file name function
     output$downloadData <- downloadHandler(
       filename = function() {
         paste0("data-", Sys.Date(), ".csv")
@@ -207,9 +202,6 @@ server <- function(input, output) {
 # Run the app
 shinyApp(ui = ui, server = server)
 ```
-
-# Run the app
-shinyApp(ui = ui, server = server)
 
 ## Results
 [download TNF edge list results](https://github.com/anaxisa/anaxisa.github.io/blob/master/Edge%20Lists/TNFel2.csv) </br>
