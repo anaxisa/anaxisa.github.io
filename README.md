@@ -2,6 +2,20 @@
 
 A citation collection tool is proposed that will expand the capabilities of the Cancer Publication Portal (CPP), which will return an edge list of PMIDs uploaded by the user. The edge list can then be uploaded to a graphing software, such as Gephi, in order to visualize citation networks.
 
+## The preferred way of running the citation tool locally is through docker:
+
+1. Download docker from https://www.docker.com/get-started
+
+2. Pull the docker image by running the following from your terminal or DOS prompt:
+
+    `docker pull gdancik/shinypmc2nc`
+
+3. Run *shiny_pmc2nc* by using the command:
+
+    `docker run -it --rm -p 3838:3838 gdancik/shinypmc2nc`
+
+4. View *shinypmc2nc* by opening a web browser and entering *localhost:3838* into the address bar.
+
 ## Shiny App
 ```R
 library(shiny)
