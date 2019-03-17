@@ -1,9 +1,0 @@
-Layouts:
-1) open ord
-2) force atlas
-
-Only kept labels of top 5 values for authority weight and top 5 values for in-degree weight
-
-Nodes colored by modularity class
-Ranked node size by indegree weight (min: 1 and max: 30)
-Ranked label size by authority weight (min: 1 and max: 2.5)
