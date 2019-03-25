@@ -1,5 +1,6 @@
 library(shiny)
 library(pmc2nc)
+library(dplyr)
 
 ARTICLE_INFO <- TRUE
 
@@ -19,7 +20,7 @@ if (ARTICLE_INFO) {
   )
   
   articleResults <- column(
-    4,
+    9,
     h4("Article information preview:"),
     tableOutput("articleInfo")
   )
@@ -80,20 +81,27 @@ ui <- fluidPage(# Create title for app
     
     # Main panel for downloading results
     mainPanel(
+      fluidRow(
       column(
         4,
-        tableOutput("resultsum"),
-        tags$hr(),
+        h4("Summary of results:"),
+        tableOutput("resultsum")
+      ),
+      column(
+        3,
         h4("Summary of most cited articles:"),
         tableOutput("topCitations")
       ),
       column(
-        4,
+        2,
         h4("Edge list preview:"),
         tableOutput("esum"),
         downloadButton("downloadData", "Download full results")
-      ), 
-      articleResults
+      )),
+      
+      tags$hr(),
+      
+      fluidRow(articleResults)
     )
   ))
 
